@@ -209,3 +209,4 @@ token.json
 **/*token.json
 **/*credentials.json
 .idea/
+ModelConfigs/*

@@ -4,7 +4,7 @@ from pprint import pprint
 import transformers
 import torch
 
-from src.MailAccess.utils import MailUtils
+from legacy.src.MailAccess.utils import MailUtils
 
 
 class Nerolith:
