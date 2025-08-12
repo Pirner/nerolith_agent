@@ -3,9 +3,9 @@ import json
 from fastapi import FastAPI
 import uvicorn
 
-from src.api.payloads import GeneratePL
-from src.llm.config import ModelConfig
-from src.llm.ModelPipeline import ModelPipeline
+from legacy.api.payloads import GeneratePL
+from legacy.llm.config import ModelConfig
+from legacy.llm.ModelPipeline import ModelPipeline
 
 config_path = 'ModelConfigs/llama_3_2_1B_instruct.json'
 with open(config_path) as f:
