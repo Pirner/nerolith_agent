@@ -1,9 +1,7 @@
-import requests
+from tqdm import tqdm
 
 from src.agent import NerolithAgent
 from src.MailAccess.utils import MailUtils
-from src.llm.DTO import Message
-from src.llm.LLMConnector import LLMConnector
 
 
 TOOLS = [
@@ -59,24 +57,16 @@ TOOLS = [
 
 
 def main():
-    messages = [
-        {"role": "system", "content": "You are a helpful assistant.\n\nCurrent Date: 2024-08-31 /no_think"},
-        {"role": "user", "content": "Whats the weather in Nuremberg tomorrow?"},
-    ]
-    messages = [Message(role=x['role'], content=x['content']) for x in messages]
     server_ip = 'localhost'
+    server_ip = '192.168.178.68'
     port = 8000
     agent = NerolithAgent()
     agent.configure_connector(server_ip, port)
 
     emails = agent.retrieve_emails()
-    # emails = [MailUtils.convert_email(x) for x in emails]
-    for em in emails:
+    for em in tqdm(emails, total=len(emails)):
         converted_email = MailUtils.convert_email(em)
         agent.process_email(email=converted_email)
-    # api_connector = LLMConnector(server_ip=server_ip, port=port)
-    # response = api_connector.call_messages(messages=messages)
-    # print(response.text)
 
 
 if __name__ == '__main__':

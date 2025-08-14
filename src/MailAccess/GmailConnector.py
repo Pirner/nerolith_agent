@@ -8,7 +8,8 @@ from google.auth.transport.requests import Request
 
 class GmailConnector:
     token_filepath: str
-    scopes = ['https://www.googleapis.com/auth/gmail.readonly']
+    # scopes = ['https://www.googleapis.com/auth/gmail.readonly']
+    scopes = ['https://www.googleapis.com/auth/gmail.modify']
     service = None
 
     def __init__(self, token_filepath: str):
@@ -48,7 +49,7 @@ class GmailConnector:
         :return:
         """
         if label_ids is None:
-            label_ids = ['INBOX']
+            label_ids = ['INBOX', 'UNREAD']
         results = self.service.users().messages().list(
             userId=user_id,
             labelIds=label_ids,
@@ -57,3 +58,28 @@ class GmailConnector:
         messages = results.get('messages', [])
         messages = [self.service.users().messages().get(userId='me', id=msg['id']).execute() for msg in messages]
         return messages
+
+    def modify_message(self, msg_id: str, add_labels: list = None, remove_labels: list = None):
+        """
+        Modify a message: add or remove labels (e.g., mark as read, move to folder).
+        :param msg_id: The ID of the message to modify
+        :param add_labels: List of labels to add (e.g., a folder label)
+        :param remove_labels: List of labels to remove (e.g., 'UNREAD' to mark as read)
+        """
+        if add_labels is None:
+            add_labels = []
+        if remove_labels is None:
+            remove_labels = []
+
+        body = {
+            'addLabelIds': add_labels,
+            'removeLabelIds': remove_labels
+        }
+
+        message = self.service.users().messages().modify(
+            userId='me',
+            id=msg_id,
+            body=body
+        ).execute()
+
+        return message

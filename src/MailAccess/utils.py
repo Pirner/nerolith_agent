@@ -46,5 +46,5 @@ class MailUtils:
         email_text = MailUtils.get_text_from_parts(parts) or "(No plain text found)"
         # print("Body:", email_text)
         has_attachments = MailUtils.parts_has_attachments(parts=parts)
-        email = Email(subject, email_text, has_attachments)
+        email = Email(subject, email_text, has_attachments, message['id'])
         return email
