@@ -1,9 +1,12 @@
 import os.path
+import base64
 
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+
+from src.MailAccess.DTO import Email, Attachment
 
 
 class GmailConnector:
@@ -19,6 +22,47 @@ class GmailConnector:
         user_id = 'me'
         label_ids = ['INBOX']
         max_results = 10
+        self.attachments = None
+
+    def _process_parts(self, parts, email: Email):
+        for p in parts:
+            # Recurse into sub-parts
+            if p.get("parts"):
+                self._process_parts(p["parts"], email)
+                continue
+
+            filename = p.get("filename")
+            body = p.get("body", {})
+            att_id = body.get("attachmentId")
+
+            if filename and att_id:
+                # Fetch attachment
+                attachment = self.service.users().messages().attachments().get(
+                    userId='me',
+                    messageId=email.message_id,
+                    id=att_id
+                ).execute()
+
+                data = attachment.get("data")
+                if data:
+                    file_data = base64.urlsafe_b64decode(data.encode("UTF-8"))
+
+                    # file_path = os.path.join(save_dir, filename)
+                    # with open(filename, "wb") as f:
+                    # f.write(file_data)
+                    self.attachments.append(Attachment(filename=filename, data=data))
+                    # saved_files.append(file_path)
+
+    def get_attachments(self, email: Email):
+        saved_files = []
+
+        # Fetch the message
+        message = self.service.users().messages().get(userId='me', id=email.message_id, format='full').execute()
+        payload = message.get("payload", {})
+        parts = payload.get("parts", [])
+        self.attachments = []
+        self._process_parts(parts, email)
+        return self.attachments
 
     def _get_gmail_service(self):
         creds = None
