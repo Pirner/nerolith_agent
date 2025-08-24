@@ -88,6 +88,18 @@ class NerolithAgent:
         messages = self.gmail_connector.get_messages()
         return messages
 
+    def _create_paper_summary(self, email: Email):
+        """
+        creates given an email with an attachment a summary of the paper
+        :param email: the email that holds the paper
+        :return:
+        """
+        # download the attachment
+        attachments = self.gmail_connector.get_attachments(email=email)
+        if len(attachments) != 1:
+            raise Exception('have an unsupported number of attachments: {}'.format(len(attachments)))
+        exit(0)
+
     def _create_zettelkasten_entry(self, email: Email):
         """
         create a zettelkasten entry from the given email
@@ -95,6 +107,10 @@ class NerolithAgent:
         :return:
         """
         print('[INFO] creating a zettelkasten entry from the given email.')
+        # check if it has an attachment
+        if email.has_attachment:
+            self._create_paper_summary(email=email)
+
         messages = [
             {
                 "role": "system",
