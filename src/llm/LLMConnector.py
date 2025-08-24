@@ -25,16 +25,23 @@ class LLMConnector:
         url = 'http://{}:{}'.format(self.server_ip, self.port)
         return url
 
-    def call_messages(self, messages: List[Message]):
+    def call_messages(self, messages: List[Message], tools=None):
         # TODO handle model_id
-        # TODO handle optional tools
-        # TODO handle messages
+        # handle optional tools
+        # handle messages
         url = '{}/message_generate'.format(self._get_base_url())
         json_messages = [x.dict() for x in messages]
-        payload = {
-            "model_id": "qwen3_0_6B",
-            "messages": json_messages,
-        }
+        if tools is None:
+            payload = {
+                "model_id": "qwen3_0_6B",
+                "messages": json_messages,
+            }
+        else:
+            payload = {
+                "model_id": "qwen3_0_6B",
+                "messages": json_messages,
+                "tools": tools
+            }
 
         x = requests.post(url, json=payload)
         return x

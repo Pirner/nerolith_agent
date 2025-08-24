@@ -1,7 +1,13 @@
+from typing import List
+
 from src.llm.DTO import Message
 from src.llm.parsing.md_parser import MarkdownParser
 from src.llm.LLMConnector import LLMConnector
 from src.llm.PromptUtils import PromptUtils
+from src.llm.Tools.DTO import ToolCall
+from src.llm.Tools.ToolUtils import ToolUtils
+from src.llm.Tools.ToolParser import LLMToolParser
+from src.llm.Tools.ArxivTools import ArxivTools
 from src.MailAccess.GmailConnector import GmailConnector
 from src.MailAccess.DTO import Email
 from src.OneDriveAccess.OneDriveManager import OneDriveManager
@@ -18,6 +24,53 @@ class NerolithAgent:
 
     def __init__(self):
         self.od_manager = OneDriveManager(local_path=r'C:\Users\steph\OneDrive')
+
+    def call_tool(self, t: ToolCall):
+        if t.name == 'get_weather':
+            res = ArxivTools.get_weather(**t.arguments)
+        elif t.name == 'add':
+            res = ArxivTools.add(**t.arguments)
+        else:
+            raise Exception('unknown tool')
+        return res
+
+    def process_tools(self, t_msg: Message) -> List[Message]:
+        messages = []
+        tools = LLMToolParser.parse_message_to_tools(t_msg)
+        for t in tools:
+            ret = self.call_tool(t=t)
+            content = f'''
+            {t}: return: {ret}
+            '''
+            m = Message(role='assistant', content=content)
+            messages.append(m)
+        return messages
+
+    def process_messages(self, messages: List[Message], tools):
+        """
+        process the messages that are given to the agent.
+        :param messages: the messages, so the whole conversation to process
+        :param tools: which tools are available from a function definition standpoint to the agent
+        :return:
+        """
+        all_messages = [] + messages
+        if tools is None:
+            response = self.llm_connector.call_messages(messages=messages)
+        else:
+            response = self.llm_connector.call_messages(messages=messages, tools=tools)
+        if response.status_code != 200:
+            print('failed llm response with: ', response.status_code)
+        response = response.json()
+        response_msg = Message(role='assistant', content=response['outputs'])
+        all_messages.append(response_msg)
+        if ToolUtils.has_tools(msg=response_msg):
+            tool_messages = self.process_tools(t_msg=response_msg)
+            # create a last response from the tools messages
+            all_messages += tool_messages
+            format_response = self.llm_connector.call_messages(all_messages)
+            return format_response
+        else:
+            return response_msg
 
     def configure_connector(self, server_ip: str, port: int):
         """
